@@ -1,72 +1,90 @@
-// TypesProduit.jsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 
-export default function TypesProduit({ produitId }) {
+export default function TypesProduit({ produitId, lang }) {
   const { register, handleSubmit, reset } = useForm();
   const [produit, setProduit] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [contenus, setContenus] = useState([""]); // items dynamiques
+
+  // Deux qualités avec leurs champs
+  const [qualites, setQualites] = useState([
+    { titreContenu: "", descContenu: "", items: [""], photoContenu: null },
+    { titreContenu: "", descContenu: "", items: [""], photoContenu: null },
+  ]);
 
   // Charger les données existantes
   useEffect(() => {
     if (produitId) {
       axios
-        .get(`http://localhost:3000/api/typesproduit/${produitId}`)
+        .get(`http://localhost:3000/api/typesproduit/${produitId}?lang=${lang}`)
         .then((res) => {
           setProduit(res.data);
           reset(res.data);
 
-          // Contenus correctement initialisés
-          setContenus(
-            res.data.contenus && res.data.contenus.length > 0
-              ? res.data.contenus
-              : [""]
-          );
+          if (res.data.qualites && res.data.qualites.length === 2) {
+            setQualites(res.data.qualites.map((q) => ({
+              titreContenu: q.titreContenu,
+              descContenu: q.descContenu,
+              items: q.items.length > 0 ? q.items : [""],
+              photoContenu: q.photoContenu || null,
+            })));
+          }
         })
         .catch((err) => console.error(err));
     }
-  }, [produitId, reset]);
+  }, [produitId, lang, reset]);
 
-  // Ajouter un item
-  const addContenu = () => setContenus([...contenus, ""]);
-
-  // Modifier un item
-  const updateContenu = (index, value) => {
-    const newList = [...contenus];
-    newList[index] = value;
-    setContenus(newList);
+  // Gestion des items
+  const addItem = (qIndex) => {
+    const newQualites = [...qualites];
+    newQualites[qIndex].items.push("");
+    setQualites(newQualites);
   };
 
-  // Supprimer un item
-  const removeContenu = (index) =>
-    setContenus(contenus.filter((_, i) => i !== index));
+  const updateItem = (qIndex, iIndex, value) => {
+    const newQualites = [...qualites];
+    newQualites[qIndex].items[iIndex] = value;
+    setQualites(newQualites);
+  };
+
+  const removeItem = (qIndex, iIndex) => {
+    const newQualites = [...qualites];
+    newQualites[qIndex].items = newQualites[qIndex].items.filter((_, i) => i !== iIndex);
+    setQualites(newQualites);
+  };
+
+  const handlePhoto = (qIndex, file) => {
+    const newQualites = [...qualites];
+    newQualites[qIndex].photoContenu = file;
+    setQualites(newQualites);
+  };
 
   // Envoi formulaire
   const onSubmit = async (data) => {
     try {
       const formData = new FormData();
 
+      formData.append("lang", lang);
       formData.append("titreProduit", data.titreProduit);
       formData.append("descProduit", data.descProduit);
 
-      if (data.photoProduit && data.photoProduit[0]) {
-        formData.append("photoProduit", data.photoProduit[0]);
-      }
+      formData.append("qualites", JSON.stringify(
+        qualites.map((q) => ({
+          titreContenu: q.titreContenu,
+          descContenu: q.descContenu,
+          items: q.items,
+        }))
+      ));
 
-      // Contenus envoyé en JSON
-      formData.append(
-  "contenus",
-  JSON.stringify(contenus.map(item => ({ titreContenu: item, items: [] })))
-);
-
+      qualites.forEach((q) => {
+        if (q.photoContenu instanceof File) {
+          formData.append("photos", q.photoContenu);
+        }
+      });
 
       if (produitId) {
-        await axios.put(
-          `http://localhost:3000/api/typesproduit/${produitId}`,
-          formData
-        );
+        await axios.put(`http://localhost:3000/api/typesproduit/${produitId}`, formData);
       } else {
         await axios.post(`http://localhost:3000/api/typesproduit`, formData);
       }
@@ -79,88 +97,114 @@ export default function TypesProduit({ produitId }) {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-5">
-      <h2 className="text-2xl font-bold text-center mb-4">
-        Gestion des Types de Produits
-      </h2>
-
+    <div className="mx-auto p-6 shadow-lg rounded-lg mt-5 bg-white">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* TITRE */}
-        <div>
-          <label className="block font-medium">Titre principal</label>
-          <input
-            type="text"
-            {...register("titreProduit")}
-            disabled={!isEditing}
-            className="w-full border p-2 rounded disabled:bg-gray-100"
-          />
-        </div>
+        {/* TITRE PRINCIPAL */}
+        <input
+          type="text"
+          {...register("titreProduit")}
+          disabled={!isEditing}
+          placeholder="Titre principal"
+          className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+        />
 
-        {/* DESCRIPTION */}
-        <div>
-          <label className="block font-medium">Description</label>
-          <textarea
-            {...register("descProduit")}
-            disabled={!isEditing}
-            className="w-full border p-2 rounded disabled:bg-gray-100"
-          />
-        </div>
+        {/* DESCRIPTION PRINCIPALE */}
+        <textarea
+          {...register("descProduit")}
+          disabled={!isEditing}
+          placeholder="Description principale"
+          className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+        />
 
-        {/* PHOTO */}
-        <div>
-          <label className="block font-medium">Image du produit</label>
-          <input
-            type="file"
-            {...register("photoProduit")}
-            disabled={!isEditing}
-            className="w-full border p-2 rounded disabled:bg-gray-100"
-          />
+        {/* GRID 2 colonnes pour les deux qualités */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          {qualites.map((q, qIndex) => (
+            <div key={qIndex} className="p-4 rounded-lg border bg-green-50 shadow">
+              <h3 className="text-lg font-bold text-green-700 mb-3">
+                {qIndex === 0 ? "Qualité 1" : "Qualité 2"}
+              </h3>
 
-          {produit?.photoProduit && (
-            <img
-              src={`http://localhost:3000/uploads/${produit.photoProduit}`}
-              alt="Produit"
-              className="mt-3 w-40 h-40 object-cover rounded shadow"
-            />
-          )}
-        </div>
-
-        {/* CONTENUS DYNAMIQUES */}
-        <div>
-          <label className="block font-medium">Items du contenu</label>
-
-          {contenus.map((item, index) => (
-            <div key={index} className="flex items-center gap-2 mb-2">
               <input
                 type="text"
-                value={item}
+                value={q.titreContenu}
                 disabled={!isEditing}
-                onChange={(e) => updateContenu(index, e.target.value)}
-                className="flex-1 border p-2 rounded disabled:bg-gray-100"
-                placeholder={`Item ${index + 1}`}
+                onChange={(e) => {
+                  const newQualites = [...qualites];
+                  newQualites[qIndex].titreContenu = e.target.value;
+                  setQualites(newQualites);
+                }}
+                placeholder="Titre de contenu"
+                className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200 mb-2"
               />
+
+              <textarea
+                value={q.descContenu}
+                disabled={!isEditing}
+                onChange={(e) => {
+                  const newQualites = [...qualites];
+                  newQualites[qIndex].descContenu = e.target.value;
+                  setQualites(newQualites);
+                }}
+                placeholder="Description de contenu"
+                className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200 mb-2"
+              />
+
+              {/* Items dynamiques */}
+              {q.items.map((item, iIndex) => (
+                <div key={iIndex} className="flex items-center gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={item}
+                    disabled={!isEditing}
+                    onChange={(e) => updateItem(qIndex, iIndex, e.target.value)}
+                    placeholder={`Item ${iIndex + 1}`}
+                    className="flex-1 border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+                  />
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(qIndex, iIndex)}
+                      className="text-white bg-red-500 px-3 py-1 rounded"
+                    >
+                      X
+                    </button>
+                  )}
+                </div>
+              ))}
 
               {isEditing && (
                 <button
                   type="button"
-                  onClick={() => removeContenu(index)}
-                  className="text-white bg-red-500 px-3 py-1 rounded"
+                  onClick={() => addItem(qIndex)}
+                  className="bg-green-600 text-white px-3 py-1 rounded mt-2"
                 >
-                  X
+                  + Ajouter un item
                 </button>
+              )}
+
+              {/* Photo de la qualité */}
+              {!isEditing ? (
+                q.photoContenu && (
+                  <img
+                    src={
+                      q.photoContenu instanceof File
+                        ? URL.createObjectURL(q.photoContenu)
+                        : `http://localhost:3000${q.photoContenu}`
+                    }
+                    alt="Qualité"
+                    className="mt-3 w-40 h-40 object-cover rounded shadow"
+                  />
+                )
+              ) : (
+                <input
+                  type="file"
+                  disabled={!isEditing}
+                  onChange={(e) => handlePhoto(qIndex, e.target.files[0])}
+                  className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200 mt-2"
+                />
               )}
             </div>
           ))}
-
-          {isEditing && (
-            <button
-              type="button"
-              onClick={addContenu}
-              className="bg-blue-600 text-white px-3 py-1 rounded mt-2"
-            >
-              + Ajouter un contenu
-            </button>
-          )}
         </div>
 
         {/* BOUTONS */}

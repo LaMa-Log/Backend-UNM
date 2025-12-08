@@ -7,7 +7,7 @@ interface PrepItem {
   photo_desc: string;
 }
 
-export default function Produit() {
+export default function Produit({ lang }: { lang: string }) {
   const EMPTY_ITEMS: PrepItem[] = [
     { photo: null, photo_title: "", photo_desc: "" },
     { photo: null, photo_title: "", photo_desc: "" },
@@ -26,27 +26,29 @@ export default function Produit() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const res = await axios.get("http://localhost:3000/api/produit");
+      try {
+        const res = await axios.get(`http://localhost:3000/api/produit?lang=${lang}`);
+        if (res.data.length > 0) {
+          const data = res.data[0];
+          setDbId(data.id);
 
-      if (res.data.length > 0) {
-        const data = res.data[0];
-        setDbId(data._id);
+          const prepared = [...EMPTY_ITEMS];
+          data.preparation.forEach((item: PrepItem, i: number) => {
+            prepared[i] = item;
+          });
 
-        const prepared = [...EMPTY_ITEMS];
-        data.preparation.forEach((item: PrepItem, i: number) => {
-          prepared[i] = item;
-        });
-
-        setForm({
-          title: data.title,
-          title_desc: data.title_desc,
-          preparation: prepared,
-        });
+          setForm({
+            title: data.title,
+            title_desc: data.title_desc,
+            preparation: prepared,
+          });
+        }
+      } catch (err) {
+        console.error("Erreur fetch produit :", err);
       }
     };
-
     fetchData();
-  }, []);
+  }, [lang]);
 
   const handleChange = (i: number, field: keyof PrepItem, value: string) => {
     if (locked) return;
@@ -64,6 +66,7 @@ export default function Produit() {
 
   const submit = async () => {
     const fd = new FormData();
+    fd.append("lang", lang);
     fd.append("title", form.title);
     fd.append("title_desc", form.title_desc);
     fd.append("preparation", JSON.stringify(form.preparation));
@@ -74,23 +77,24 @@ export default function Produit() {
       }
     });
 
-    if (dbId) {
-      await axios.put(`http://localhost:3000/api/produit/${dbId}`, fd);
-    } else {
-      await axios.post("http://localhost:3000/api/produit", fd);
+    try {
+      if (dbId) {
+        await axios.put(`http://localhost:3000/api/produit/${dbId}`, fd);
+      } else {
+        await axios.post("http://localhost:3000/api/produit", fd);
+      }
+      alert("Enregistré !");
+      setLocked(true);
+    } catch (err) {
+      console.error("Erreur submit produit :", err);
     }
-
-    alert("Enregistré !");
-    setLocked(true);
   };
 
   return (
-    <div className="p-4 max-w-3xl mx-auto">
-      <h1 className="text-xl font-bold mb-4">Préparation</h1>
-
-      <input
+    <div className="p-4 mx-auto">
+        <input
         disabled={locked}
-        className="border p-2 w-full mt-3"
+        className="border p-2 w-full mt-3 rounded bg-gray-700/10"
         placeholder="Titre"
         value={form.title}
         onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -98,32 +102,39 @@ export default function Produit() {
 
       <textarea
         disabled={locked}
-        className="border p-2 w-full mt-3"
+        className="border p-2 w-full mt-3 rounded bg-gray-700/10"
         placeholder="Description"
         value={form.title_desc}
+        rows={4}
         onChange={(e) => setForm({ ...form, title_desc: e.target.value })}
       />
 
       {form.preparation.map((item, i) => (
-        <div key={i} className="border p-3 rounded mt-4">
-          {item.photo && typeof item.photo === "string" && (
+        <div key={i} className="border p-3 rounded mt-4 bg-gray-50">
+          {item.photo && (
             <img
-              src={`http://localhost:5000${item.photo}`}
+              src={
+                item.photo instanceof File
+                  ? URL.createObjectURL(item.photo)
+                  : `http://localhost:3000${item.photo}`
+              }
               alt="photo"
-              className="w-32 h-32 object-cover mb-2"
+              className="w-32 h-32 object-cover mb-2 rounded border"
             />
           )}
 
           {!locked && (
             <input
               type="file"
+              accept="image/*"
               onChange={(e) => handlePhoto(i, e.target.files?.[0] as File)}
+              className="border p-2 w-full mt-2 rounded bg-gray-700/10"
             />
           )}
 
           <input
             disabled={locked}
-            className="border p-2 w-full mt-2"
+            className="border p-2 w-full mt-2 rounded bg-gray-700/10"
             placeholder="Photo Titre"
             value={item.photo_title}
             onChange={(e) => handleChange(i, "photo_title", e.target.value)}
@@ -131,9 +142,10 @@ export default function Produit() {
 
           <textarea
             disabled={locked}
-            className="border p-2 w-full mt-2"
+            className="border p-2 w-full mt-2 rounded bg-gray-700/10"
             placeholder="Photo Desc"
             value={item.photo_desc}
+            rows={4}
             onChange={(e) => handleChange(i, "photo_desc", e.target.value)}
           />
         </div>
@@ -157,4 +169,3 @@ export default function Produit() {
     </div>
   );
 }
-

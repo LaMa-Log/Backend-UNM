@@ -1,25 +1,55 @@
 import mongoose from "mongoose";
 
+// Schéma des piliers avec champs multilingues
 const pilierSchema = new mongoose.Schema({
-  titre: { type: String, required: true },
-  description: { type: String, required: true }
+  titre: {
+    fr: { type: String, required: true },
+    en: { type: String },
+    zh: { type: String }
+  },
+  description: {
+    fr: { type: String, required: true },
+    en: { type: String },
+    zh: { type: String }
+  }
 });
 
-const entrepriseSchema = new mongoose.Schema({
-  titre: { type: String, required: true, trim: true },
-  historiques: { type: String, required: true },
-  theme: { type: String, required: true },
-  photoIdentite: { type: String },
-  photoPiliers: { type: String },
-  piliers: {
-    type: [pilierSchema],
-    validate: [arrayLimit, "{PATH} exceeds the limit of 3"]
+// Schéma principal Entreprise
+const entrepriseSchema = new mongoose.Schema(
+  {
+    titre: {
+      fr: { type: String, required: true, trim: true },
+      en: { type: String, trim: true },
+      zh: { type: String, trim: true }
+    },
+    historiques: {
+      fr: { type: String, required: true },
+      en: { type: String },
+      zh: { type: String }
+    },
+    theme: {
+      fr: { type: String, required: true },
+      en: { type: String },
+      zh: { type: String }
+    },
+    photoIdentite: { type: String },
+    photoPiliers: { type: String },
+
+    // Tableau de piliers (max 3)
+    piliers: {
+      type: [pilierSchema],
+      validate: [arrayLimit, "{PATH} exceeds the limit of 3"]
+    },
+
+    // Identité : tableau de chaînes multilingues
+    identite: {
+      fr: { type: [String], validate: [arrayLimit, "{PATH} exceeds the limit of 3"] },
+      en: { type: [String], validate: [arrayLimit, "{PATH} exceeds the limit of 3"] },
+      zh: { type: [String], validate: [arrayLimit, "{PATH} exceeds the limit of 3"] }
+    }
   },
-  identite: {
-    type: [String],
-    validate: [arrayLimit, "{PATH} exceeds the limit of 3"]
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 function arrayLimit(val) {
   return val.length <= 3;

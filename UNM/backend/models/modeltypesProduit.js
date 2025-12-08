@@ -1,16 +1,44 @@
-// models/TypeProduit.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const contenuSchema = new mongoose.Schema({
-  titreContenu: { type: String, required: true },
-  items: [{ type: String }] // tableau de plusieurs items
+// Schéma pour une qualité de produit
+const qualiteSchema = new mongoose.Schema({
+  titreContenu: {
+    fr: { type: String, required: true },
+    en: { type: String },
+    zh: { type: String }
+  },
+  descContenu: {
+    fr: { type: String },
+    en: { type: String },
+    zh: { type: String }
+  },
+  items: [{
+    fr: { type: String },
+    en: { type: String },
+    zh: { type: String }
+  }],
+  photoContenu: { type: String } // photo spécifique à cette qualité
 });
 
+// Schéma principal TypeProduit
 const typeProduitSchema = new mongoose.Schema({
-  titreProduit: { type: String, required: true },
-  descProduit: { type: String },
-  photoProduit: { type: String }, 
-  contenus: [contenuSchema] 
+  titreProduit: {
+    fr: { type: String, required: true },
+    en: { type: String },
+    zh: { type: String }
+  },
+  descProduit: {
+    fr: { type: String },
+    en: { type: String },
+    zh: { type: String }
+  },
+  qualites: {
+    type: [qualiteSchema],
+    validate: {
+      validator: (val) => val.length === 2, // exactement deux qualités
+      message: "Le produit doit contenir exactement 2 qualités."
+    }
+  }
 }, { timestamps: true });
 
-module.exports = mongoose.model('TypeProduit', typeProduitSchema);
+module.exports = mongoose.model("TypeProduit", typeProduitSchema);

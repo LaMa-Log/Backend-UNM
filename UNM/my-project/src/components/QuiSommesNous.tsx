@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
-export default function Entreprise() {
+export default function Entreprise({ lang }) {
   const [entreprises, setEntreprises] = useState([]);
   const [formData, setFormData] = useState({
     id: null,
@@ -14,21 +14,48 @@ export default function Entreprise() {
     photoPiliers: null,
   });
 
-  // Charger les entreprises au montage
-  useEffect(() => {
-    fetchEntreprises();
-  }, []);
+  const [isEditing, setIsEditing] = useState(false);
 
+  const fileInputIdentite = useRef(null);
+  const fileInputPiliers = useRef(null);
+
+  // Charger les entreprises selon la langue
   const fetchEntreprises = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/entreprise");
+      const res = await axios.get(
+        `http://localhost:3000/api/entreprise?lang=${lang}`
+      );
+
       setEntreprises(res.data);
+
+      if (res.data.length > 0) {
+        const ent = res.data[0];
+        setFormData({
+          id: ent.id,
+          titre: ent.titre,
+          historiques: ent.historiques,
+          theme: ent.theme,
+          piliers: ent.piliers.length
+            ? ent.piliers
+            : [{ titre: "", description: "" }],
+          identite: ent.identite.length ? ent.identite : ["", "", ""],
+          photoIdentite: null,
+          photoPiliers: null,
+        });
+        setIsEditing(false);
+      }
     } catch (err) {
       console.error("Erreur fetch entreprises :", err);
     }
   };
 
+  useEffect(() => {
+    fetchEntreprises();
+  }, [lang]);
+
   const handleChange = (e, index = null, type = null) => {
+    if (!isEditing) return;
+
     const { name, value, files } = e.target;
 
     if (name === "photoIdentite" || name === "photoPiliers") {
@@ -55,17 +82,35 @@ export default function Entreprise() {
     }
   };
 
+  const removePilier = (index) => {
+    if (formData.piliers.length > 1) {
+      const newPiliers = formData.piliers.filter((_, i) => i !== index);
+      setFormData({ ...formData, piliers: newPiliers });
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isEditing) {
+      setIsEditing(true);
+      return;
+    }
+
     const data = new FormData();
     data.append("id", formData.id || "");
+    data.append("lang", lang);
     data.append("titre", formData.titre);
     data.append("historiques", formData.historiques);
     data.append("theme", formData.theme);
     data.append("piliers", JSON.stringify(formData.piliers));
     data.append("identite", JSON.stringify(formData.identite));
-    if (formData.photoIdentite) data.append("photoIdentite", formData.photoIdentite);
-    if (formData.photoPiliers) data.append("photoPiliers", formData.photoPiliers);
+
+    if (formData.photoIdentite)
+      data.append("photoIdentite", formData.photoIdentite);
+
+    if (formData.photoPiliers)
+      data.append("photoPiliers", formData.photoPiliers);
 
     try {
       if (formData.id) {
@@ -73,73 +118,45 @@ export default function Entreprise() {
       } else {
         await axios.post("http://localhost:3000/api/entreprise", data);
       }
-      // Reset formulaire
-      setFormData({
-        id: null,
-        titre: "",
-        historiques: "",
-        theme: "",
-        piliers: [{ titre: "", description: "" }],
-        identite: ["", "", ""],
-        photoIdentite: null,
-        photoPiliers: null,
-      });
+      setIsEditing(false);
       fetchEntreprises();
     } catch (err) {
       console.error("Erreur submit entreprise :", err);
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await axios.delete(`http://localhost:3000/api/entreprise/${id}`);
-      fetchEntreprises();
-    } catch (err) {
-      console.error("Erreur delete entreprise :", err);
-    }
-  };
-
-  const handleEdit = (ent) => {
-    setFormData({
-      id: ent._id,
-      titre: ent.titre,
-      historiques: ent.historiques,
-      theme: ent.theme,
-      piliers: ent.piliers.length ? ent.piliers : [{ titre: "", description: "" }],
-      identite: ent.identite.length ? ent.identite : ["", "", ""],
-      photoIdentite: null,
-      photoPiliers: null,
-    });
-  };
-
   return (
-    <div className="max-w-5xl mx-auto p-4">
-      {/* Formulaire */}
-      <h2 className="text-2xl font-bold mb-4">
-        {formData.id ? "Modifier Entreprise" : "Créer Entreprise"}
-      </h2>
+    <div className="max-w-6xl mx-auto p-4">
+      {/* FORMULAIRE */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-8">
-
+        
+        {/* Titre */}
         <input
           type="text"
           name="titre"
           placeholder="Titre de l'entreprise"
           value={formData.titre}
           onChange={handleChange}
-          className="border p-2 rounded w-full"
-          required
+          disabled={!isEditing}
+          className={`border p-2 rounded w-full ${
+            !isEditing ? "bg-gray-200" : ""
+          }`}
         />
 
+        {/* Historiques */}
         <textarea
           name="historiques"
-          placeholder="Racontez l'histoire de l'entreprise"
+          placeholder="Histoire de l'entreprise"
           value={formData.historiques}
           onChange={handleChange}
-          className="border p-2 rounded w-full"
-          required
+          disabled={!isEditing}
+          rows={8}
+          className={`border p-2 rounded w-full ${
+            !isEditing ? "bg-gray-200" : ""
+          }`}
         />
 
-        {/* Identité */}
+        {/* IDENTITE */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {formData.identite.map((val, i) => (
             <input
@@ -148,134 +165,200 @@ export default function Entreprise() {
               value={val}
               placeholder={`Identité ${i + 1}`}
               onChange={(e) => handleChange(e, i, "identite")}
-              className="border p-2 rounded w-full"
+              disabled={!isEditing}
+              className={`border p-2 rounded w-full ${
+                !isEditing ? "bg-gray-200" : ""
+              }`}
             />
           ))}
         </div>
 
+        {/* Thème */}
         <input
           type="text"
           name="theme"
-          placeholder="Thème de l'entreprise"
+          placeholder="Thème"
           value={formData.theme}
           onChange={handleChange}
-          className="border p-2 rounded w-full"
-          required
+          disabled={!isEditing}
+          className={`border p-2 rounded w-full ${
+            !isEditing ? "bg-gray-200" : ""
+          }`}
         />
 
         {/* Upload photos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
           <div>
-            <label className="block font-medium mb-1">Photo Identité</label>
-            <input type="file" name="photoIdentite" onChange={handleChange} className="border p-2 rounded w-full" />
+            <label className="font-medium mb-1 block">Photo Identité</label>
+            <input
+              type="file"
+              name="photoIdentite"
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="border p-2 rounded w-full"
+              ref={fileInputIdentite}
+            />
           </div>
+
           <div>
-            <label className="block font-medium mb-1">Photo Piliers</label>
-            <input type="file" name="photoPiliers" onChange={handleChange} className="border p-2 rounded w-full" />
+            <label className="font-medium mb-1 block">Photo Piliers</label>
+            <input
+              type="file"
+              name="photoPiliers"
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="border p-2 rounded w-full"
+              ref={fileInputPiliers}
+            />
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={addPilier}
-          className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 transition self-start"
-        >
-          Ajouter Pilier (max 3)
-        </button>
+        {/* PILIERS */}
+        <div className="mb-4 ">
+          <div className="space-y-4">
+            {formData.piliers.map((pilier, idx) => (
+              <div
+                key={idx}
+                className="border p-3 rounded-lg shadow-sm bg-gray-50 relative"
+              >
+                {/* Titre pilier */}
+                <input
+                  type="text"
+                  name="titre"
+                  placeholder="Titre du pilier"
+                  value={pilier.titre}
+                  onChange={(e) => handleChange(e, idx, "pilier")}
+                  disabled={!isEditing}
+                  className={`border p-2 rounded w-full mb-2 ${
+                    !isEditing ? "bg-gray-200" : ""
+                  }`}
+                />
 
-        {/* Piliers */}
-        {formData.piliers.map((pilier, i) => (
-          <div key={i} className="border p-2 rounded mb-2">
-            <input
-              type="text"
-              name="titre"
-              placeholder="Titre du pilier"
-              value={pilier.titre}
-              onChange={(e) => handleChange(e, i, "pilier")}
-              className="border p-2 rounded w-full mb-1"
-            />
-            <textarea
-              name="description"
-              placeholder="Description du pilier"
-              value={pilier.description}
-              onChange={(e) => handleChange(e, i, "pilier")}
-              className="border p-2 rounded w-full"
-            />
+                {/* Description pilier */}
+                <textarea
+                  name="description"
+                  placeholder="Description du pilier"
+                  value={pilier.description}
+                  onChange={(e) => handleChange(e, idx, "pilier")}
+                  disabled={!isEditing}
+                  className={`border p-2 rounded w-full ${
+                    !isEditing ? "bg-gray-200" : ""
+                  }`}
+                />
+                <div className="flex justify-end items-start space-x-1">
+                  
+                {/* Bouton supprimer */}
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => removePilier(idx)}
+                    className ="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+                  >
+                    –
+                  </button>
+                )}
+
+                {/* Bouton + */}
+                  {isEditing && formData.piliers.length < 3 && (
+                    <div className="flex justify-end ">
+                      <button
+                        type="button"
+                        onClick={addPilier}
+                        className ="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+                      >
+                        + 
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
 
+        </div>
+
+        {/* Bouton principal */}
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+          className={`px-4 py-2 rounded ${
+            isEditing
+              ? "bg-blue-500 text-white hover:bg-blue-600"
+              : "bg-green-500 text-white hover:bg-green-600"
+          }`}
         >
-          {formData.id ? "Modifier" : "Enregistrer"}
+          {isEditing ? "Sauvegarder" : "Modifier"}
         </button>
       </form>
 
-      {/* Liste des entreprises */}
-      <h3 className="text-2xl font-bold mb-6 text-gray-800">Entreprises existantes</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {entreprises.map((ent) => (
-          <div key={ent._id} className="border border-gray-200 p-5 rounded-xl shadow-lg bg-white hover:shadow-xl transition">
+      {/* LISTE ENTREPRISES */}
+      {!isEditing && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {entreprises.map((ent) => (
+            <div
+              key={ent.id}
+              className="border p-5 rounded-xl shadow-lg bg-white hover:shadow-xl transition"
+            >
+              <h4 className="text-lg font-bold mb-2">{ent.titre}</h4>
+              <p className="text-gray-700 mb-3">{ent.historiques}</p>
+              <p className="font-semibold text-indigo-600 mb-4">
+                Thème: {ent.theme}
+              </p>
 
-            <h4 className="text-lg font-bold text-gray-900 mb-2">{ent.titre}</h4>
-            <p className="text-gray-700 mb-3">{ent.historiques}</p>
-            <p className="text-indigo-600 font-semibold mb-4">Thème: {ent.theme}</p>
-
-            {/* Identités */}
-            <div className="mb-4">
-              <div className="flex flex-wrap gap-2">
-                {ent.identite.map((id, idx) => (
-                  <span key={idx} className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">{id}</span>
-                ))}
+              {/* Identité */}
+              <div className="mb-4">
+                <div className="flex flex-wrap gap-2">
+                  {ent.identite.map((id, idx) => (
+                    <span
+                      key={idx}
+                      className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm"
+                    >
+                      {id}
+                    </span>
+                  ))}
+                </div>
               </div>
-              {ent.photoIdentite && (
-                <img
-                  src={`http://localhost:3000${ent.photoIdentite}`}
-                  alt="Identité"
-                  className="w-full h-40 object-cover rounded-lg shadow mt-3 border border-gray-200"
-                />
-              )}
-            </div>
 
-            {/* Piliers */}
-            <div className="mb-4">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {ent.piliers.map((p, idx) => (
-                  <div key={idx} className="border border-gray-200 p-3 rounded-lg shadow-sm bg-gray-50">
-                    <div className="font-semibold text-gray-800 mb-1">{p.titre}</div>
-                    <div className="text-gray-700 text-sm">{p.description}</div>
-                  </div>
-                ))}
+              {/* Boutons actions */}
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => {
+                    setFormData({
+                      id: ent.id,
+                      titre: ent.titre,
+                      historiques: ent.historiques,
+                      theme: ent.theme,
+                      piliers: ent.piliers,
+                      identite: ent.identite,
+                      photoIdentite: null,
+                      photoPiliers: null,
+                    });
+                    setIsEditing(false);
+                  }}
+                  className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                >
+                  Modifier
+                </button>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await axios.delete(
+                        `http://localhost:3000/api/entreprise/${ent.id}`
+                      );
+                      fetchEntreprises();
+                    } catch (err) {
+                      console.error("Erreur delete entreprise :", err);
+                    }
+                  }}
+                  className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                >
+                  Supprimer
+                </button>
               </div>
-              {ent.photoPiliers && (
-                <img
-                  src={`http://localhost:3000${ent.photoPiliers}`}
-                  alt="Piliers"
-                  className="w-full h-40 object-cover rounded-lg shadow mt-3 border border-gray-200"
-                />
-              )}
             </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={() => handleEdit(ent)}
-                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
-              >
-                Modifier
-              </button>
-              <button
-                onClick={() => handleDelete(ent._id)}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-              >
-                Supprimer
-              </button>
-            </div>
-
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
