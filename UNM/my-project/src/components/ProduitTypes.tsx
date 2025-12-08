@@ -23,12 +23,14 @@ export default function TypesProduit({ produitId, lang }) {
           reset(res.data);
 
           if (res.data.qualites && res.data.qualites.length === 2) {
-            setQualites(res.data.qualites.map((q) => ({
-              titreContenu: q.titreContenu,
-              descContenu: q.descContenu,
-              items: q.items.length > 0 ? q.items : [""],
-              photoContenu: q.photoContenu || null,
-            })));
+            setQualites(
+              res.data.qualites.map((q) => ({
+                titreContenu: q.titreContenu,
+                descContenu: q.descContenu,
+                items: q.items.length > 0 ? q.items : [""],
+                photoContenu: q.photoContenu || null,
+              }))
+            );
           }
         })
         .catch((err) => console.error(err));
@@ -63,20 +65,29 @@ export default function TypesProduit({ produitId, lang }) {
   // Envoi formulaire
   const onSubmit = async (data) => {
     try {
-      const formData = new FormData();
+      // Validation côté front
+      if (!data.titreProduit || !qualites[0].titreContenu || !qualites[1].titreContenu) {
+        alert("Veuillez remplir le titre principal et les titres des deux qualités");
+        return;
+      }
 
+      const formData = new FormData();
       formData.append("lang", lang);
       formData.append("titreProduit", data.titreProduit);
       formData.append("descProduit", data.descProduit);
 
-      formData.append("qualites", JSON.stringify(
-        qualites.map((q) => ({
-          titreContenu: q.titreContenu,
-          descContenu: q.descContenu,
-          items: q.items,
-        }))
-      ));
+      formData.append(
+        "qualites",
+        JSON.stringify(
+          qualites.map((q) => ({
+            titreContenu: q.titreContenu,
+            descContenu: q.descContenu,
+            items: Array.isArray(q.items) ? q.items : [],
+          }))
+        )
+      );
 
+      // Photos envoyées sous le champ commun "photos"
       qualites.forEach((q) => {
         if (q.photoContenu instanceof File) {
           formData.append("photos", q.photoContenu);

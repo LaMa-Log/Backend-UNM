@@ -1,4 +1,4 @@
-const TypeProduit = require("../models/TypeProduit");
+const TypeProduit = require("../models/modeltypesProduit");
 
 // ➡️ Créer un type produit
 exports.createTypeProduit = async (req, res) => {
