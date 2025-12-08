@@ -15,9 +15,8 @@ export default function Entreprise({ lang }) {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-
-  const fileInputIdentite = useRef(null);
-  const fileInputPiliers = useRef(null);
+  const fileInputIdentite = useRef(null); 
+  const fileInputPiliers = useRef(null); 
 
   // Charger les entreprises selon la langue
   const fetchEntreprises = async () => {
@@ -186,32 +185,67 @@ export default function Entreprise({ lang }) {
           }`}
         />
 
-        {/* Upload photos */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
-          <div>
-            <label className="font-medium mb-1 block">Photo Identité</label>
-            <input
-              type="file"
-              name="photoIdentite"
-              onChange={handleChange}
-              disabled={!isEditing}
-              className="border p-2 rounded w-full"
-              ref={fileInputIdentite}
-            />
-          </div>
+         {/* Aperçu image Piliers */}
+        <div className="flex justify-evenly items-center">
+         <div className="flex items-center gap-3">
+         
+           <img
+             src={
+               formData.photoPiliers
+                 ? URL.createObjectURL(formData.photoPiliers)
+                 : entreprises[0]?.photoPiliers
+                 ? `http://localhost:3000${entreprises[0].photoPiliers}`
+                 : "/uploads.png"
+             }
+             alt="Photo Identité"
+             className={`w-32 h-32 object-cover rounded border cursor-pointer ${
+               !isEditing ? "opacity-50 cursor-not-allowed" : ""
+             }`}
+             onClick={() => isEditing && fileInputPiliers.current.click()}
+          />
+         
+           <input
+             type="file"
+             name="photoIdentite"
+             accept="image/*"
+             ref={fileInputPiliers}
+             onChange={handleChange}
+             className="hidden"
+           />
+         
+         </div>
 
-          <div>
-            <label className="font-medium mb-1 block">Photo Piliers</label>
-            <input
-              type="file"
-              name="photoPiliers"
-              onChange={handleChange}
-              disabled={!isEditing}
-              className="border p-2 rounded w-full"
-              ref={fileInputPiliers}
-            />
-          </div>
-        </div>
+          {/* Aperçu image Identité */}
+          <div className="flex items-center gap-3">
+         
+           <img
+             src={
+               formData.photoIdentite
+                 ? URL.createObjectURL(formData.photoIdentite)
+                 : entreprises[0]?.photoIdentite
+                 ? `http://localhost:3000${entreprises[0].photoIdentite}`
+                 : "/uploads.png"
+             }
+             alt="Photo Identité"
+             className={`w-32 h-32 object-cover rounded border cursor-pointer ${
+               !isEditing ? "opacity-50 cursor-not-allowed" : ""
+             }`}
+             onClick={() => isEditing && fileInputIdentite.current.click()}
+          />
+         
+           <input
+             type="file"
+             name="photoIdentite"
+             accept="image/*"
+             ref={fileInputIdentite}
+             onChange={handleChange}
+             className="hidden"
+           />
+         
+         </div>
+         </div>
+
+
 
         {/* PILIERS */}
         <div className="mb-4 ">
@@ -252,9 +286,9 @@ export default function Entreprise({ lang }) {
                   <button
                     type="button"
                     onClick={() => removePilier(idx)}
-                    className ="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+                    className ="bg-gray-100 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
                   >
-                    –
+                    <img src="/delete.svg" alt="supprimer" className="w-4 h-4 transition-all hover:cursor-pointer" />
                   </button>
                 )}
 
@@ -264,9 +298,9 @@ export default function Entreprise({ lang }) {
                       <button
                         type="button"
                         onClick={addPilier}
-                        className ="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+                        className ="bg-gray-100 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
                       >
-                        + 
+                        <img src="/add.svg" alt="ajoute" className="w-4 h-4 transition-all hover:cursor-pointer" />
                       </button>
                     </div>
                   )}

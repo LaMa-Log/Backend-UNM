@@ -2,35 +2,31 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 
-export default function Engagement({ engagementId }) {
+export default function Engagement({ engagementId, lang }) {
   const { register, handleSubmit, reset } = useForm();
   const [engagement, setEngagement] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [items, setItems] = useState([{ name: "" }]);
+  const [items, setItems] = useState([""]);
 
-  // Charger données existantes
+  // Charger données existantes selon la langue
   useEffect(() => {
     if (engagementId) {
       axios
-        .get(`http://localhost:3000/api/engagement/${engagementId}`)
+        .get(`http://localhost:3000/api/engagement/${engagementId}?lang=${lang}`)
         .then((res) => {
           setEngagement(res.data);
           reset(res.data);
-          setItems(
-            res.data.items && res.data.items.length > 0
-              ? res.data.items.map((i) => ({ name: i }))
-              : [{ name: "" }]
-          );
+          setItems(res.data.items && res.data.items.length > 0 ? res.data.items : [""]);
         })
         .catch((err) => console.error(err));
     }
-  }, [engagementId, reset]);
+  }, [engagementId, lang, reset]);
 
   // Gestion items dynamiques
-  const addItem = () => setItems([...items, { name: "" }]);
+  const addItem = () => setItems([...items, ""]);
   const updateItem = (index, value) => {
     const newItems = [...items];
-    newItems[index].name = value;
+    newItems[index] = value;
     setItems(newItems);
   };
   const removeItem = (index) => setItems(items.filter((_, i) => i !== index));
@@ -39,18 +35,16 @@ export default function Engagement({ engagementId }) {
   const onSubmit = async (data) => {
     try {
       const payload = {
+        lang, // 🔑 langue active
         titre1: data.titre1,
         descTitre1: data.descTitre1,
         titre2: data.titre2,
         descTitre2: data.descTitre2,
-        items: items.map((i) => i.name),
+        items: items,
       };
 
       if (engagementId) {
-        await axios.put(
-          `http://localhost:3000/api/engagement/${engagementId}`,
-          payload
-        );
+        await axios.put(`http://localhost:3000/api/engagement/${engagementId}`, payload);
       } else {
         await axios.post("http://localhost:3000/api/engagement", payload);
       }
@@ -63,66 +57,53 @@ export default function Engagement({ engagementId }) {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-5">
-      <h2 className="text-2xl font-bold text-center mb-4">
-        Gestion Engagements
-      </h2>
-
+    <div className=" mx-auto p-6 shadow-lg rounded-lg mt-5">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* TITRE 1 */}
-        <div>
-          <label className="block font-medium">Titre 1</label>
-          <input
-            type="text"
-            {...register("titre1")}
-            disabled={!isEditing}
-            className="w-full border p-2 rounded disabled:bg-gray-100"
-          />
-        </div>
+        <input
+          type="text"
+          {...register("titre1")}
+          disabled={!isEditing}
+          placeholder="Titre 1"
+          className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+        />
 
         {/* DESCRIPTION TITRE 1 */}
-        <div>
-          <label className="block font-medium">Description Titre 1</label>
-          <textarea
-            {...register("descTitre1")}
-            disabled={!isEditing}
-            className="w-full border p-2 rounded disabled:bg-gray-100"
-          />
-        </div>
+        <textarea
+          {...register("descTitre1")}
+          disabled={!isEditing}
+          placeholder="Description Titre 1"
+          className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+        />
 
         {/* TITRE 2 */}
-        <div>
-          <label className="block font-medium">Titre 2</label>
-          <input
-            type="text"
-            {...register("titre2")}
-            disabled={!isEditing}
-            className="w-full border p-2 rounded disabled:bg-gray-100"
-          />
-        </div>
+        <input
+          type="text"
+          {...register("titre2")}
+          disabled={!isEditing}
+          placeholder="Titre 2"
+          className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+        />
 
         {/* DESCRIPTION TITRE 2 */}
-        <div>
-          <label className="block font-medium">Description Titre 2</label>
-          <textarea
-            {...register("descTitre2")}
-            disabled={!isEditing}
-            className="w-full border p-2 rounded disabled:bg-gray-100"
-          />
-        </div>
+        <textarea
+          {...register("descTitre2")}
+          disabled={!isEditing}
+          placeholder="Description Titre 2"
+          className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+        />
 
         {/* ITEMS DYNAMIQUES */}
         <div>
-          <label className="block font-medium">Items</label>
           {items.map((item, index) => (
             <div key={index} className="flex items-center gap-2 mb-2">
               <input
                 type="text"
-                value={item.name}
+                value={item}
                 disabled={!isEditing}
                 onChange={(e) => updateItem(index, e.target.value)}
-                className="flex-1 border p-2 rounded disabled:bg-gray-100"
                 placeholder={`Item ${index + 1}`}
+                className="flex-1 border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
               />
               {isEditing && (
                 <button

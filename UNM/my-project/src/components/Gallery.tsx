@@ -47,9 +47,7 @@ export default function Gallery() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-5">
-      <h2 className="text-2xl font-bold text-center mb-4">Galerie</h2>
-
+    <div className="mx-auto p-6 mt-5">
       {/* Formulaire ajout */}
       <form onSubmit={handleSubmit} className="mb-6 space-y-4">
         <input
@@ -69,7 +67,7 @@ export default function Gallery() {
             <img
               src={`http://localhost:3000/uploads/${p.photo}`}
               alt="gallery"
-              className="w-full h-40 object-cover"
+              className="w-full h-80 object-cover"
             />
             <button
               onClick={() => handleDelete(p._id)}

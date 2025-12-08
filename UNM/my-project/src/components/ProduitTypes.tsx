@@ -108,7 +108,7 @@ export default function TypesProduit({ produitId, lang }) {
   };
 
   return (
-    <div className="mx-auto p-6 shadow-lg rounded-lg mt-5 bg-white">
+    <div className="mx-auto p-6 shadow-lg rounded-lg mt-5">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* TITRE PRINCIPAL */}
         <input
