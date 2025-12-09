@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Profil from "./Profil";
 import Entreprise from "./QuiSommesNous";
 import Preparation from "./Preparation";
@@ -15,7 +16,7 @@ const menuItems = [
   { id: 3, label: "Préparation", text: "Nos étapes de préparation", content: (lang) => <Preparation lang={lang} /> },
   { id: 4, label: "Produits", text: "Catalogue de produits", content: (lang) => <Produit lang={lang} /> },
   { id: 5, label: "Types Produits", text: "Classification des produits", content: (lang) => <TypesProduit lang={lang} /> },
-  { id: 6, label: "Visions et Valeurs", text: "Nos engagements", content: (lang) => <Engagement lang={lang} /> },
+  { id: 6, label: "Visions et Valeurs", text: "Vision et Valeurs", content: (lang) => <Engagement lang={lang} /> },
   { id: 7, label: "Mes galleries", text: "Galerie photos", content: (lang) => <Gallery lang={lang} /> }
 ];
 
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [activeMenu, setActiveMenu] = useState(menuItems[0]);
   const [activeLangue, setActiveLangue] = useState("fr");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
 
   const langues = [
     { code: "fr", label: "Français" },
@@ -30,11 +32,18 @@ export default function Dashboard() {
     { code: "zh", label: "Mandarin" },
   ];
 
+  // 🔒 Vérification du token au montage
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login"); // redirection si pas connecté
+    }
+  }, [navigate]);
+
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar desktop */}
       <div className="hidden md:flex flex-col justify-between w-64 bg-gray-100 shadow-md border-r-2 border-gray-600/50">
-        {/* Haut : titre + menu */}
         <div>
           <h2 className="text-2xl font-bold text-center bg-gray-200/40 py-4 uppercase">
             Tableau de bord
@@ -54,31 +63,27 @@ export default function Dashboard() {
           </ul>
         </div>
 
-        {/* Bas : bouton logout */}
         <div className="w-full border-t border-gray-300 ">
           <LogoutButton />
         </div>
       </div>
 
-      {/* Sidebar mobile overlay avec animation */}
+      {/* Sidebar mobile */}
       <div
         className={`fixed inset-0 z-20 md:hidden transition-opacity duration-300 ${
           sidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       >
-        {/* Fond semi-transparent */}
         <div
           className="absolute inset-0 bg-black bg-opacity-50"
           onClick={() => setSidebarOpen(false)}
         ></div>
 
-        {/* Menu qui glisse depuis la gauche */}
         <div
           className={`absolute left-0 top-0 h-full w-64 bg-white shadow-md flex flex-col justify-between transform transition-transform duration-300 ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
-          {/* Haut : bouton fermer + menu */}
           <div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -104,7 +109,6 @@ export default function Dashboard() {
             </ul>
           </div>
 
-          {/* Bas : bouton logout */}
           <div className="w-full border-t border-gray-300">
             <LogoutButton />
           </div>
@@ -113,7 +117,6 @@ export default function Dashboard() {
 
       {/* Contenu principal */}
       <div className="flex-1 overflow-auto relative">
-        {/* Bouton menu mobile */}
         <div className="md:hidden p-4 fixed right-0 bottom-0 z-40">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -123,7 +126,6 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Barre langues fixe */}
         <div className="sticky top-0 left-0 right-0 shadow bg-white flex">
           <ul className="flex justify-evenly items-center text-xl h-full w-full">
             {langues.map((lang) => (
@@ -141,7 +143,6 @@ export default function Dashboard() {
           </ul>
         </div>
 
-        {/* Titre + contenu avec padding-top */}
         <div className="pt-10">
           <h1 className="text-3xl font-bold text-center">
             {activeMenu.text}

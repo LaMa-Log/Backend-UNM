@@ -65,7 +65,6 @@ export default function TypesProduit({ produitId, lang }) {
   // Envoi formulaire
   const onSubmit = async (data) => {
     try {
-      // Validation côté front
       if (!data.titreProduit || !qualites[0].titreContenu || !qualites[1].titreContenu) {
         alert("Veuillez remplir le titre principal et les titres des deux qualités");
         return;
@@ -87,7 +86,6 @@ export default function TypesProduit({ produitId, lang }) {
         )
       );
 
-      // Photos envoyées sous le champ commun "photos"
       qualites.forEach((q) => {
         if (q.photoContenu instanceof File) {
           formData.append("photos", q.photoContenu);
@@ -131,7 +129,7 @@ export default function TypesProduit({ produitId, lang }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
           {qualites.map((q, qIndex) => (
             <div key={qIndex} className="p-4 rounded-lg border bg-green-50 shadow">
-              <h3 className="text-lg font-bold text-green-700 mb-3">
+              <h3 className="text-lg text-center font-bold text-green-700 mb-3">
                 {qIndex === 0 ? "Qualité 1" : "Qualité 2"}
               </h3>
 
@@ -169,7 +167,7 @@ export default function TypesProduit({ produitId, lang }) {
                     disabled={!isEditing}
                     onChange={(e) => updateItem(qIndex, iIndex, e.target.value)}
                     placeholder={`Item ${iIndex + 1}`}
-                    className="flex-1 border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+                    className="flex-1 border px-2 py-1 text-sm rounded bg-gray-700/10 disabled:bg-gray-200"
                   />
                   {isEditing && (
                     <button
@@ -177,7 +175,7 @@ export default function TypesProduit({ produitId, lang }) {
                       onClick={() => removeItem(qIndex, iIndex)}
                       className="text-white bg-red-500 px-3 py-1 rounded"
                     >
-                      X
+                      <img src="/delete.svg" alt="supprimer" className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -189,31 +187,36 @@ export default function TypesProduit({ produitId, lang }) {
                   onClick={() => addItem(qIndex)}
                   className="bg-green-600 text-white px-3 py-1 rounded mt-2"
                 >
-                  + Ajouter un item
+                  <img src="/add.svg" alt="ajoute" className="w-4 h-4" />
                 </button>
               )}
 
               {/* Photo de la qualité */}
-              {!isEditing ? (
-                q.photoContenu && (
-                  <img
-                    src={
-                      q.photoContenu instanceof File
-                        ? URL.createObjectURL(q.photoContenu)
-                        : `http://localhost:3000${q.photoContenu}`
-                    }
-                    alt="Qualité"
-                    className="mt-3 w-40 h-40 object-cover rounded shadow"
-                  />
-                )
-              ) : (
+              <div className="flex items-center gap-3 mt-3">
+                <img
+                  src={
+                    q.photoContenu instanceof File
+                      ? URL.createObjectURL(q.photoContenu)
+                      : q.photoContenu
+                      ? `http://localhost:3000${q.photoContenu}`
+                      : "/uploads.png"
+                  }
+                  alt={`Photo Qualité ${qIndex + 1}`}
+                  className={`w-32 h-32 object-cover rounded border ${
+                    !isEditing ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                  }`}
+                  onClick={() => isEditing && document.getElementById(`fileInput-${qIndex}`).click()}
+                />
+
                 <input
                   type="file"
+                  id={`fileInput-${qIndex}`}
+                  accept="image/*"
                   disabled={!isEditing}
+                  className="hidden"
                   onChange={(e) => handlePhoto(qIndex, e.target.files[0])}
-                  className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200 mt-2"
                 />
-              )}
+              </div>
             </div>
           ))}
         </div>
@@ -224,14 +227,14 @@ export default function TypesProduit({ produitId, lang }) {
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="bg-yellow-500 text-white px-4 py-2 rounded"
+              className="w-full bg-green-500 text-white px-4 py-2 rounded"
             >
               Modifier
             </button>
           ) : (
             <button
               type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded"
+              className="w-full bg-blue-600  text-white px-4 py-2 rounded"
             >
               Sauvegarder
             </button>

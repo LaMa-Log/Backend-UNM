@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Entreprise({ lang }) {
   const [entreprises, setEntreprises] = useState([]);
@@ -15,10 +17,10 @@ export default function Entreprise({ lang }) {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const fileInputIdentite = useRef(null); 
-  const fileInputPiliers = useRef(null); 
+  const fileInputIdentite = useRef(null);
+  const fileInputPiliers = useRef(null);
 
-  // Charger les entreprises selon la langue
+  // Charger données
   const fetchEntreprises = async () => {
     try {
       const res = await axios.get(
@@ -44,7 +46,7 @@ export default function Entreprise({ lang }) {
         setIsEditing(false);
       }
     } catch (err) {
-      console.error("Erreur fetch entreprises :", err);
+      toast.error("Erreur lors du chargement des données !");
     }
   };
 
@@ -52,6 +54,7 @@ export default function Entreprise({ lang }) {
     fetchEntreprises();
   }, [lang]);
 
+  // Gestion inputs
   const handleChange = (e, index = null, type = null) => {
     if (!isEditing) return;
 
@@ -72,6 +75,7 @@ export default function Entreprise({ lang }) {
     }
   };
 
+  // Ajouter un pilier
   const addPilier = () => {
     if (formData.piliers.length < 3) {
       setFormData({
@@ -81,6 +85,7 @@ export default function Entreprise({ lang }) {
     }
   };
 
+  // Supprimer un pilier
   const removePilier = (index) => {
     if (formData.piliers.length > 1) {
       const newPiliers = formData.piliers.filter((_, i) => i !== index);
@@ -88,11 +93,14 @@ export default function Entreprise({ lang }) {
     }
   };
 
+  // Sauvegarde / édition
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Activer édition
     if (!isEditing) {
       setIsEditing(true);
+      toast.info("Mode édition activé !");
       return;
     }
 
@@ -114,13 +122,16 @@ export default function Entreprise({ lang }) {
     try {
       if (formData.id) {
         await axios.put("http://localhost:3000/api/entreprise", data);
+        toast.success("Entreprise mise à jour avec succès !");
       } else {
         await axios.post("http://localhost:3000/api/entreprise", data);
+        toast.success("Entreprise créée avec succès !");
       }
+
       setIsEditing(false);
       fetchEntreprises();
     } catch (err) {
-      console.error("Erreur submit entreprise :", err);
+      toast.error("Vous avez un champ manquant !");
     }
   };
 
@@ -128,7 +139,7 @@ export default function Entreprise({ lang }) {
     <div className="max-w-6xl mx-auto p-4">
       {/* FORMULAIRE */}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-8">
-        
+
         {/* Titre */}
         <input
           type="text"
@@ -137,9 +148,7 @@ export default function Entreprise({ lang }) {
           value={formData.titre}
           onChange={handleChange}
           disabled={!isEditing}
-          className={`border p-2 rounded w-full ${
-            !isEditing ? "bg-gray-200" : ""
-          }`}
+          className={`border p-2 rounded w-full ${!isEditing ? "bg-gray-200" : ""}`}
         />
 
         {/* Historiques */}
@@ -150,9 +159,7 @@ export default function Entreprise({ lang }) {
           onChange={handleChange}
           disabled={!isEditing}
           rows={8}
-          className={`border p-2 rounded w-full ${
-            !isEditing ? "bg-gray-200" : ""
-          }`}
+          className={`border p-2 rounded w-full ${!isEditing ? "bg-gray-200" : ""}`}
         />
 
         {/* IDENTITE */}
@@ -180,82 +187,71 @@ export default function Entreprise({ lang }) {
           value={formData.theme}
           onChange={handleChange}
           disabled={!isEditing}
-          className={`border p-2 rounded w-full ${
-            !isEditing ? "bg-gray-200" : ""
-          }`}
+          className={`border p-2 rounded w-full ${!isEditing ? "bg-gray-200" : ""}`}
         />
 
-         {/* Aperçu image Piliers */}
+        {/* Images */}
         <div className="flex justify-evenly items-center">
-         <div className="flex items-center gap-3">
-         
-           <img
-             src={
-               formData.photoPiliers
-                 ? URL.createObjectURL(formData.photoPiliers)
-                 : entreprises[0]?.photoPiliers
-                 ? `http://localhost:3000${entreprises[0].photoPiliers}`
-                 : "/uploads.png"
-             }
-             alt="Photo Identité"
-             className={`w-32 h-32 object-cover rounded border cursor-pointer ${
-               !isEditing ? "opacity-50 cursor-not-allowed" : ""
-             }`}
-             onClick={() => isEditing && fileInputPiliers.current.click()}
-          />
-         
-           <input
-             type="file"
-             name="photoIdentite"
-             accept="image/*"
-             ref={fileInputPiliers}
-             onChange={handleChange}
-             className="hidden"
-           />
-         
-         </div>
 
-          {/* Aperçu image Identité */}
+          {/* Piliers */}
           <div className="flex items-center gap-3">
-         
-           <img
-             src={
-               formData.photoIdentite
-                 ? URL.createObjectURL(formData.photoIdentite)
-                 : entreprises[0]?.photoIdentite
-                 ? `http://localhost:3000${entreprises[0].photoIdentite}`
-                 : "/uploads.png"
-             }
-             alt="Photo Identité"
-             className={`w-32 h-32 object-cover rounded border cursor-pointer ${
-               !isEditing ? "opacity-50 cursor-not-allowed" : ""
-             }`}
-             onClick={() => isEditing && fileInputIdentite.current.click()}
-          />
-         
-           <input
-             type="file"
-             name="photoIdentite"
-             accept="image/*"
-             ref={fileInputIdentite}
-             onChange={handleChange}
-             className="hidden"
-           />
-         
-         </div>
-         </div>
+            <img
+              src={
+                formData.photoPiliers
+                  ? URL.createObjectURL(formData.photoPiliers)
+                  : entreprises[0]?.photoPiliers
+                  ? `http://localhost:3000${entreprises[0].photoPiliers}`
+                  : "/uploads.png"
+              }
+              className={`w-32 h-32 object-cover rounded border cursor-pointer ${
+                !isEditing ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              onClick={() => isEditing && fileInputPiliers.current.click()}
+            />
+            <input
+              type="file"
+              name="photoPiliers"
+              accept="image/*"
+              ref={fileInputPiliers}
+              onChange={handleChange}
+              className="hidden"
+            />
+          </div>
 
-
+          {/* Identité */}
+          <div className="flex items-center gap-3">
+            <img
+              src={
+                formData.photoIdentite
+                  ? URL.createObjectURL(formData.photoIdentite)
+                  : entreprises[0]?.photoIdentite
+                  ? `http://localhost:3000${entreprises[0].photoIdentite}`
+                  : "/uploads.png"
+              }
+              className={`w-32 h-32 object-cover rounded border cursor-pointer ${
+                !isEditing ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              onClick={() => isEditing && fileInputIdentite.current.click()}
+            />
+            <input
+              type="file"
+              name="photoIdentite"
+              accept="image/*"
+              ref={fileInputIdentite}
+              onChange={handleChange}
+              className="hidden"
+            />
+          </div>
+        </div>
 
         {/* PILIERS */}
-        <div className="mb-4 ">
+        <div className="mb-4">
           <div className="space-y-4">
             {formData.piliers.map((pilier, idx) => (
               <div
                 key={idx}
                 className="border p-3 rounded-lg shadow-sm bg-gray-50 relative"
               >
-                {/* Titre pilier */}
                 <input
                   type="text"
                   name="titre"
@@ -268,7 +264,6 @@ export default function Entreprise({ lang }) {
                   }`}
                 />
 
-                {/* Description pilier */}
                 <textarea
                   name="description"
                   placeholder="Description du pilier"
@@ -279,36 +274,32 @@ export default function Entreprise({ lang }) {
                     !isEditing ? "bg-gray-200" : ""
                   }`}
                 />
-                <div className="flex justify-end items-start space-x-1">
-                  
-                {/* Bouton supprimer */}
-                {isEditing && (
-                  <button
-                    type="button"
-                    onClick={() => removePilier(idx)}
-                    className ="bg-gray-100 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-                  >
-                    <img src="/delete.svg" alt="supprimer" className="w-4 h-4 transition-all hover:cursor-pointer" />
-                  </button>
-                )}
 
-                {/* Bouton + */}
+                <div className="flex justify-end items-start space-x-1">
+
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => removePilier(idx)}
+                      className="bg-gray-100 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                    >
+                      <img src="/delete.svg" className="w-4 h-4" />
+                    </button>
+                  )}
+
                   {isEditing && formData.piliers.length < 3 && (
-                    <div className="flex justify-end ">
-                      <button
-                        type="button"
-                        onClick={addPilier}
-                        className ="bg-gray-100 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
-                      >
-                        <img src="/add.svg" alt="ajoute" className="w-4 h-4 transition-all hover:cursor-pointer" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={addPilier}
+                      className="bg-gray-100 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+                    >
+                      <img src="/add.svg" className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
               </div>
             ))}
           </div>
-
         </div>
 
         {/* Bouton principal */}
@@ -334,25 +325,24 @@ export default function Entreprise({ lang }) {
             >
               <h4 className="text-lg font-bold mb-2">{ent.titre}</h4>
               <p className="text-gray-700 mb-3">{ent.historiques}</p>
+
               <p className="font-semibold text-indigo-600 mb-4">
                 Thème: {ent.theme}
               </p>
 
               {/* Identité */}
-              <div className="mb-4">
-                <div className="flex flex-wrap gap-2">
-                  {ent.identite.map((id, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm"
-                    >
-                      {id}
-                    </span>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {ent.identite.map((id, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm"
+                  >
+                    {id}
+                  </span>
+                ))}
               </div>
 
-              {/* Boutons actions */}
+              {/* Boutons */}
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => {
@@ -379,9 +369,10 @@ export default function Entreprise({ lang }) {
                       await axios.delete(
                         `http://localhost:3000/api/entreprise/${ent.id}`
                       );
+                      toast.success("Entreprise supprimée !");
                       fetchEntreprises();
                     } catch (err) {
-                      console.error("Erreur delete entreprise :", err);
+                      toast.error("Erreur lors de la suppression !");
                     }
                   }}
                   className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
@@ -393,6 +384,17 @@ export default function Entreprise({ lang }) {
           ))}
         </div>
       )}
+
+      {/* TOASTIFY */}
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+      />
     </div>
   );
 }

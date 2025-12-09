@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface PrepItem {
   photo: File | string | null;
@@ -24,7 +26,6 @@ export default function Produit({ lang }: { lang: string }) {
   const [locked, setLocked] = useState(true);
   const [dbId, setDbId] = useState<string | null>(null);
 
-  // Charger depuis API
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -49,13 +50,13 @@ export default function Produit({ lang }: { lang: string }) {
         }
       } catch (err) {
         console.error("Erreur fetch produit :", err);
+        toast.error("Erreur lors du chargement !");
       }
     };
 
     fetchData();
   }, [lang]);
 
-  // Modifier texte
   const handleChange = (i: number, field: keyof PrepItem, value: string) => {
     if (locked) return;
     const updated = [...form.preparation];
@@ -63,7 +64,6 @@ export default function Produit({ lang }: { lang: string }) {
     setForm({ ...form, preparation: updated });
   };
 
-  // Upload image
   const handlePhoto = (i: number, file: File) => {
     if (locked) return;
     const updated = [...form.preparation];
@@ -71,7 +71,6 @@ export default function Produit({ lang }: { lang: string }) {
     setForm({ ...form, preparation: updated });
   };
 
-  // Envoyer API
   const submit = async () => {
     const fd = new FormData();
 
@@ -93,16 +92,17 @@ export default function Produit({ lang }: { lang: string }) {
         await axios.post("http://localhost:3000/api/produit", fd);
       }
 
-      alert("Enregistré !");
+      toast.success("Enregistré !");
       setLocked(true);
+
     } catch (err) {
       console.error("Erreur submit produit :", err);
+      toast.error("Erreur lors de l'enregistrement !");
     }
   };
 
   return (
     <div className="p-4 mx-auto max-w-5xl">
-
       {/* TITRE */}
       <input
         disabled={locked}
@@ -119,9 +119,7 @@ export default function Produit({ lang }: { lang: string }) {
         placeholder="Description"
         rows={4}
         value={form.title_desc}
-        onChange={(e) =>
-          setForm({ ...form, title_desc: e.target.value })
-        }
+        onChange={(e) => setForm({ ...form, title_desc: e.target.value })}
       />
 
       {/* ITEMS */}
@@ -130,7 +128,7 @@ export default function Produit({ lang }: { lang: string }) {
           key={i}
           className="border p-4 rounded mt-5 bg-gray-50 grid grid-cols-1 md:grid-cols-3 gap-4"
         >
-          {/* -------------------- PHOTO (1/3) -------------------- */}
+          {/* PHOTO */}
           <div className="flex flex-col items-center justify-start">
             <input
               id={`file_${i}`}
@@ -138,9 +136,7 @@ export default function Produit({ lang }: { lang: string }) {
               className="hidden"
               accept="image/*"
               disabled={locked}
-              onChange={(e) =>
-                handlePhoto(i, e.target.files?.[0] as File)
-              }
+              onChange={(e) => handlePhoto(i, e.target.files?.[0] as File)}
             />
 
             <div
@@ -162,26 +158,19 @@ export default function Produit({ lang }: { lang: string }) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <img
-                  src="/upload.png"
-                  className="w-14 h-14 opacity-50"
-                  alt="upload"
-                />
+                <img src="/upload.png" className="w-14 h-14 opacity-50" alt="upload" />
               )}
             </div>
           </div>
 
-          {/* -------------------- TEXTES (2/3) -------------------- */}
+          {/* TEXTES */}
           <div className="md:col-span-2 flex flex-col space-y-3">
-
             <input
               disabled={locked}
               className="border p-2 w-full rounded bg-gray-200"
               placeholder="Titre de la photo"
               value={item.photo_title}
-              onChange={(e) =>
-                handleChange(i, "photo_title", e.target.value)
-              }
+              onChange={(e) => handleChange(i, "photo_title", e.target.value)}
             />
 
             <textarea
@@ -190,15 +179,13 @@ export default function Produit({ lang }: { lang: string }) {
               placeholder="Description"
               value={item.photo_desc}
               rows={4}
-              onChange={(e) =>
-                handleChange(i, "photo_desc", e.target.value)
-              }
+              onChange={(e) => handleChange(i, "photo_desc", e.target.value)}
             />
           </div>
         </div>
       ))}
 
-      {/* BOUTONS */}
+      {/* BUTTONS */}
       {locked ? (
         <button
           onClick={() => setLocked(false)}
@@ -214,6 +201,17 @@ export default function Produit({ lang }: { lang: string }) {
           Sauvegarder
         </button>
       )}
+
+      {/* TOASTIFY */}
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+      />
     </div>
   );
 }

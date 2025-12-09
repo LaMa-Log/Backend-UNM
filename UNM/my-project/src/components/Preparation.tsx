@@ -19,7 +19,7 @@ export default function Preparation({ lang }: { lang: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 🟩 Charger les données selon la langue
+  // Charger les données depuis API
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -31,6 +31,7 @@ export default function Preparation({ lang }: { lang: string }) {
 
         if (res.data.length > 0) {
           const data = res.data[0];
+
           setForm({
             id: data.id,
             title: data.title,
@@ -53,7 +54,8 @@ export default function Preparation({ lang }: { lang: string }) {
     fetchData();
   }, [lang]);
 
-  // 🟩 Modification texte
+
+  // Modification d’un champ texte
   const handleChange = (i: number, field: keyof PrepItem, value: string) => {
     if (locked) return;
     const updated = [...form.preparation];
@@ -61,7 +63,7 @@ export default function Preparation({ lang }: { lang: string }) {
     setForm({ ...form, preparation: updated });
   };
 
-  // 🟩 Upload image
+  // Upload d’une image
   const handlePhoto = (i: number, file: File) => {
     if (locked) return;
     const updated = [...form.preparation];
@@ -69,26 +71,25 @@ export default function Preparation({ lang }: { lang: string }) {
     setForm({ ...form, preparation: updated });
   };
 
-  // 🟩 Ajouter item (max 5)
+  // Ajouter un item (max 5)
   const addItem = () => {
     if (form.preparation.length < 5) {
       setForm({
         ...form,
-        preparation: [
-          ...form.preparation,
-          { photo: null, photo_title: "", photo_desc: "" },
+        preparation: [...form.preparation,
+          { photo: null, photo_title: "", photo_desc: "" }
         ],
       });
     }
   };
 
-  // 🟩 Supprimer item
+  // Supprimer un item
   const removeItem = (i: number) => {
     const updated = form.preparation.filter((_, idx) => idx !== i);
     setForm({ ...form, preparation: updated });
   };
 
-  // 🟩 Sauvegarde API
+  // Sauvegarde API
   const submit = async () => {
     try {
       setLoading(true);
@@ -100,7 +101,7 @@ export default function Preparation({ lang }: { lang: string }) {
       fd.append("title_desc", form.title_desc);
       fd.append("preparation", JSON.stringify(form.preparation));
 
-      // Ajout des fichiers (seulement File)
+      // Ajouter les fichiers
       form.preparation.forEach((item) => {
         if (item.photo instanceof File) {
           fd.append("photos", item.photo);
@@ -126,7 +127,7 @@ export default function Preparation({ lang }: { lang: string }) {
   return (
     <div className="mx-auto p-6 space-y-6">
 
-      {/* Titre */}
+      {/* TITRE */}
       <input
         disabled={locked}
         className="w-full border p-2 rounded-md bg-gray-200 outline-none"
@@ -135,7 +136,7 @@ export default function Preparation({ lang }: { lang: string }) {
         onChange={(e) => setForm({ ...form, title: e.target.value })}
       />
 
-      {/* Description */}
+      {/* DESCRIPTION */}
       <textarea
         disabled={locked}
         className="w-full border p-2 rounded-md bg-gray-200 outline-none"
@@ -151,7 +152,7 @@ export default function Preparation({ lang }: { lang: string }) {
           key={i}
           className="border p-4 rounded bg-gray-100 space-y-3 md:grid md:grid-cols-2 md:gap-4"
         >
-          {/* IMAGE UPLOAD / PREVIEW */}
+          {/* IMAGE PREVIEW + UPLOAD */}
           <div className="flex flex-col items-start">
             <input
               type="file"
@@ -163,10 +164,8 @@ export default function Preparation({ lang }: { lang: string }) {
             />
 
             <div
-              className={`w-32 h-32 rounded border flex items-center justify-center overflow-hidden cursor-pointer ${
-                locked
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:scale-105 transition"
+              className={`w-32 h-32 rounded border flex items-center justify-center overflow-hidden ${
+                locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:scale-105 transition"
               }`}
               onClick={() =>
                 !locked && document.getElementById(`file_${i}`)?.click()
@@ -183,11 +182,7 @@ export default function Preparation({ lang }: { lang: string }) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <img
-                  src="/upload.png"
-                  alt="Upload"
-                  className="w-16 h-16 opacity-60"
-                />
+                <img src="/upload.png" className="w-16 h-16 opacity-60" />
               )}
             </div>
           </div>
@@ -211,24 +206,31 @@ export default function Preparation({ lang }: { lang: string }) {
               onChange={(e) => handleChange(i, "photo_desc", e.target.value)}
             />
 
-            <div className="flex justify-end space-x-2">
-              {!locked && (
-                <button
-                  onClick={() => removeItem(i)}
-                  className="px-4 py-2 bg-gray-100 text-white rounded hover:bg-red-600"
-                >
-                  <img src="/delete.svg" alt="ajoute" className="w-4 h-4 transition-all hover:cursor-pointer" />
-                </button>
-              )}
-              {!locked && form.preparation.length < 5 && (
-                <button
-                  onClick={addItem}
-                  className="px-4 py-2 bg-gray-100 text-white rounded hover:bg-green-700"
-                >
-                  <img src="/add.svg" alt="ajoute" className="w-4 h-4 transition-all hover:cursor-pointer" />
-                </button>
-              )}
-            </div>
+            {/* BOUTONS AJOUT / SUPPRESSION */}
+            {!locked && (
+              <div className="flex justify-end gap-3">
+
+                {/* Supprimer */}
+                {form.preparation.length > 1 && (
+                  <button
+                    onClick={() => removeItem(i)}
+                    className="p-2 bg-red-600 rounded hover:bg-red-700"
+                  >
+                    <img src="/delete.svg" className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Ajouter */}
+                {i === form.preparation.length - 1 && form.preparation.length < 5 && (
+                  <button
+                    onClick={addItem}
+                    className="p-2 bg-green-600 rounded hover:bg-green-700"
+                  >
+                    <img src="/add.svg" className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ))}
@@ -238,7 +240,7 @@ export default function Preparation({ lang }: { lang: string }) {
         {locked ? (
           <button
             onClick={() => setLocked(false)}
-            className=" bg-green-600 w-full text-white px-6 py-2 rounded"
+            className="bg-green-600 w-full text-white px-6 py-2 rounded"
           >
             Modifier
           </button>

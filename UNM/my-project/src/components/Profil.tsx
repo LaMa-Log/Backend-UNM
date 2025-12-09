@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function Profil({ lang }) {
   const [profiles, setProfiles] = useState([]);
@@ -13,7 +14,7 @@ export default function Profil({ lang }) {
 
   const fileInputRef = useRef(null);
 
-  // Charger les profils selon la langue
+  // Charger les profils
   const fetchProfiles = async () => {
     try {
       const res = await axios.get(`http://localhost:3000/api/profiles?lang=${lang}`);
@@ -30,61 +31,77 @@ export default function Profil({ lang }) {
         setIsEditing(false);
       }
     } catch (err) {
-      console.error(err);
+      toast.error("Erreur lors du chargement des données !");
     }
   };
 
   useEffect(() => {
     fetchProfiles();
-  }, [lang]); // recharge quand la langue change
+  }, [lang]);
 
-  // Gérer les changements
+  // Gestion des inputs
   const handleChange = (e) => {
     if (!isEditing) return;
 
     if (e.target.name === "profilePhoto") {
       const file = e.target.files[0];
-      if (file && file.type.startsWith("image/")) {
-        setFormData({ ...formData, profilePhoto: file });
-      } else {
-        alert("Veuillez sélectionner uniquement une image !");
+
+      if (!file) return;
+
+      if (!file.type.startsWith("image/")) {
+        toast.warning("Veuillez sélectionner uniquement une image !");
+        return;
       }
+
+      setFormData({ ...formData, profilePhoto: file });
     } else {
       setFormData({ ...formData, [e.target.name]: e.target.value });
     }
   };
 
-  // Soumettre le formulaire
+  // Soumission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isEditing) {
       setIsEditing(true);
+      toast.info("Mode édition activé");
+      return;
+    }
+
+    if (!formData.title || !formData.title_desc) {
+      toast.warning("Veuillez remplir tous les champs !");
       return;
     }
 
     const data = new FormData();
     data.append("id", formData.id);
-    data.append("lang", lang); // 🔑 envoyer la langue active
+    data.append("lang", lang);
     data.append("title", formData.title);
     data.append("title_desc", formData.title_desc);
-    if (formData.profilePhoto) data.append("profilePhoto", formData.profilePhoto);
+
+    if (formData.profilePhoto) {
+      data.append("profilePhoto", formData.profilePhoto);
+    }
 
     try {
       if (formData.id) {
         await axios.put("http://localhost:3000/api/profiles", data, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        toast.success("Profil mis à jour avec succès !");
       } else {
         await axios.post("http://localhost:3000/api/profiles", data, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        toast.success("Profil enregistré avec succès !");
       }
 
       setIsEditing(false);
       fetchProfiles();
     } catch (err) {
       console.error(err);
+      toast.error("Erreur lors de l'enregistrement !");
     }
   };
 
@@ -101,6 +118,7 @@ export default function Profil({ lang }) {
           required
           className={`border p-2 rounded ${!isEditing ? "bg-gray-200" : ""}`}
         />
+
         <textarea
           name="title_desc"
           placeholder="Description"
@@ -112,7 +130,7 @@ export default function Profil({ lang }) {
           className={`border p-2 rounded ${!isEditing ? "bg-gray-200" : ""}`}
         />
 
-        {/* Aperçu image */}
+        {/* Image */}
         <div className="flex items-center gap-3">
           <img
             src={
@@ -157,6 +175,7 @@ export default function Profil({ lang }) {
                   />
                 )}
               </div>
+
               <div className="flex flex-col space-y-5 items-center justify-center text-white">
                 <h4 className="font-bold">{profile.title}</h4>
                 <p className="mb-2">{profile.title_desc}</p>
@@ -165,6 +184,17 @@ export default function Profil({ lang }) {
           ))}
         </div>
       )}
+
+      {/* Toastify */}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="light"
+      />
     </div>
   );
 }

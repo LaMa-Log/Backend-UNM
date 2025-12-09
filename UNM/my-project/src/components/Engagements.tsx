@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Engagement({ engagementId, lang }) {
   const { register, handleSubmit, reset } = useForm();
-  const [engagement, setEngagement] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [items, setItems] = useState([""]);
 
@@ -14,11 +15,21 @@ export default function Engagement({ engagementId, lang }) {
       axios
         .get(`http://localhost:3000/api/engagement/${engagementId}?lang=${lang}`)
         .then((res) => {
-          setEngagement(res.data);
-          reset(res.data);
-          setItems(res.data.items && res.data.items.length > 0 ? res.data.items : [""]);
+          const data = res.data;
+
+          reset({
+            titre1: data.titre1 || "",
+            descTitre1: data.descTitre1 || "",
+            titre2: data.titre2 || "",
+            descTitre2: data.descTitre2 || "",
+          });
+
+          setItems(data.items?.length > 0 ? data.items : [""]);
         })
-        .catch((err) => console.error(err));
+        .catch((err) => {
+          console.error(err);
+          toast.error("Erreur de récupération !");
+        });
     }
   }, [engagementId, lang, reset]);
 
@@ -35,29 +46,33 @@ export default function Engagement({ engagementId, lang }) {
   const onSubmit = async (data) => {
     try {
       const payload = {
-        lang, // 🔑 langue active
+        lang,
         titre1: data.titre1,
         descTitre1: data.descTitre1,
         titre2: data.titre2,
         descTitre2: data.descTitre2,
-        items: items,
+        items,
       };
 
       if (engagementId) {
-        await axios.put(`http://localhost:3000/api/engagement/${engagementId}`, payload);
+        await axios.put(
+          `http://localhost:3000/api/engagement/${engagementId}`,
+          payload
+        );
       } else {
         await axios.post("http://localhost:3000/api/engagement", payload);
       }
 
-      alert("Données sauvegardées !");
+      toast.success("Données sauvegardées !");
       setIsEditing(false);
     } catch (err) {
       console.error("Erreur envoi :", err);
+      toast.error("Erreur lors de la sauvegarde !");
     }
   };
 
   return (
-    <div className=" mx-auto p-6 shadow-lg rounded-lg mt-5">
+    <div className="mx-auto p-6 shadow-lg rounded-lg mt-5">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* TITRE 1 */}
         <input
@@ -73,6 +88,7 @@ export default function Engagement({ engagementId, lang }) {
           {...register("descTitre1")}
           disabled={!isEditing}
           placeholder="Description Titre 1"
+          rows={4}
           className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
         />
 
@@ -90,6 +106,7 @@ export default function Engagement({ engagementId, lang }) {
           {...register("descTitre2")}
           disabled={!isEditing}
           placeholder="Description Titre 2"
+          rows={4}
           className="w-full border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
         />
 
@@ -103,50 +120,55 @@ export default function Engagement({ engagementId, lang }) {
                 disabled={!isEditing}
                 onChange={(e) => updateItem(index, e.target.value)}
                 placeholder={`Item ${index + 1}`}
-                className="flex-1 border p-2 rounded bg-gray-700/10 disabled:bg-gray-200"
+                className="flex-1 border px-2 py-1 text-sm rounded bg-gray-700/10 disabled:bg-gray-200"
               />
+
               {isEditing && (
                 <button
                   type="button"
                   onClick={() => removeItem(index)}
-                  className="text-white bg-red-500 px-3 py-1 rounded"
+                  className="bg-red-500 p-2 rounded"
                 >
-                  X
+                  <img src="/delete.svg" alt="supprimer" className="w-4 h-4" />
                 </button>
               )}
             </div>
           ))}
+
           {isEditing && (
             <button
               type="button"
               onClick={addItem}
-              className="bg-blue-600 text-white px-3 py-1 rounded mt-2"
+              className="bg-green-500 text-white px-3 py-1 rounded mt-2"
             >
-              + Ajouter un item
+              <img src="/add.svg" alt="ajoute" className="w-4 h-4" />
             </button>
           )}
         </div>
 
         {/* BOUTONS */}
-        <div className="flex justify-between pt-4">
+        <div className="pt-4">
           {!isEditing ? (
             <button
               type="button"
               onClick={() => setIsEditing(true)}
-              className="bg-yellow-500 text-white px-4 py-2 rounded"
+              className="w-full bg-green-500 text-white px-4 py-2 rounded"
             >
               Modifier
             </button>
           ) : (
             <button
               type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded"
+              className="w-full bg-blue-600 text-white px-4 py-2 rounded"
             >
               Sauvegarder
             </button>
           )}
         </div>
       </form>
+
+      {/* Toastify */}
+      <ToastContainer position="top-right" />
     </div>
   );
 }
