@@ -31,7 +31,7 @@ const preparationSchema = new mongoose.Schema({
     type: [preparationItemSchema],
     validate: {
       validator: (val) => val.length <= 6,
-      message: "La préparation ne peut contenir que 4 éléments maximum."
+      message: "La préparation ne peut contenir que 5 éléments maximum."
     },
     default: []
   }

@@ -25,7 +25,7 @@ exports.createPreparation = async (req, res) => {
     await newPrep.save();
     res.status(201).json(newPrep);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message});
   }
 };
 
